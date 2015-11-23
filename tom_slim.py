@@ -7,7 +7,6 @@
 ##############################################################################
 
 ## write a text parser that allows for effient reading of a large slim output collection
-
 def slim_reader(input_file):
 	with open(input_file,"r") as FILE:
 		slim_output = ''
@@ -22,6 +21,21 @@ def slim_reader(input_file):
 				slim_output = ' '
 			
 		#yield slim_output		
+import gzip
+def slim_reader_gzip(input_file):
+	with gzip.open(input_file,'r') as FILE:
+		slim_output = ''
+		terminator = 'None\n'
+		for line in FILE:
+			if line.startswith('#INPUT'):
+				slim_output += line
+			elif not line.startswith(terminator):
+				slim_output += line
+			elif line.startswith(terminator):
+				yield slim_output
+				slim_output = ' '
+			
+		#yield slim_output	
 
 
 ##############################################################################
@@ -246,6 +260,5 @@ class slim:
 				neutral_sites += range(int(i[1]),int(i[2])+1)
 		sites_dict["neutral"] = ["neutral",neutral_sites]
 		return sites_dict
-
 
 
