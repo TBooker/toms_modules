@@ -1,4 +1,4 @@
-These modeules contain functions taht I use for lots of differnt scripts
+These modules contain functions taht I use for lots of differnt scripts
 
 Just so that you know in the future. To add files to the python path you need to make or open a file called .profil in the default directory that terminal or console or whatever Unix commmand line interface you are using is called.
 
