@@ -95,18 +95,23 @@ def slim_reader_gzip(input_file):
 ###					and "neutral". These are lists with all the sites 
 ###					of either type in them
 ###
-###	COULD ADD A WEIGHTED AVERAGE RECOMBINATION RATE FUNCTION?	
+###	slim.organ_lengths()		Gives a dictionary of the combined lengths of the genomic
+###					elements in a particular 
+###
+###	slim.organs_mutations()		Gives a dictionary of the mutations in a particular
+###					genomic element, uses the SLiM codes (e.g. g0, g1...)
 ###
 ######################################################################
+
+from tom import in_range
+
 """This is a class that allows you to access all the elements of a slim run easily
 For example, if you want to look at how chromosomal structure and genetic diversity interact
 you can get the information easily. 
 There are more options on the way...
 Fixed option allows you to specify whether ther are fixed mutations in your output"""
 class slim:
-
 	def __init__(self,slimput,fixed=False): 
-
 		if type(slimput) == str:
 			slimmers = slimput.split("\n")	
 		elif type(slimput) == list:
@@ -196,7 +201,7 @@ class slim:
 				self.fixed = [i.split(" ") for i in slimmers[slimmers.index(fixed_line):] if len(i.split(" ")) == 8]
 			elif not fixed_muts:
 				self.fixed = []			
-		
+################################################################################		
 	#################################################
 ### This function tests whether the output is sensible or not
 	def slim_sanity_test(self, threshold = "0.0001"):
@@ -221,7 +226,7 @@ class slim:
 					
 				else:
 					return "good"
-
+################################################################################
 ## SITES DICT PSEUDO CODE...
 #
 ## This function is to take a slim and return a dictionary of sites.
@@ -240,8 +245,9 @@ class slim:
 #
 #
 #
+
+## Not a very good way of doing this, but good for the HRI scripts...
 	def sites_dict(self):
-## TAKE THIS AS A LESSON TO ALWAYS COMMENT YOUR CODE WELL, YOU IDIOT!
 		sites_dict = {}
 		selected_sites =[]
 		for j in self.regions:
@@ -260,5 +266,28 @@ class slim:
 				neutral_sites += range(int(i[1]),int(i[2])+1)
 		sites_dict["neutral"] = ["neutral",neutral_sites]
 		return sites_dict
+################################################################################
+	def organ_lengths(self):
+		organ_lengths = {}
+		for org in self.organs:
+			if org[0] not in organ_lengths.keys():
+				organ_lengths[org[0]]=int(org[2])-int(org[1])+1
+			else:
+				organ_lengths[org[0]]+=int(org[2])-int(org[1])+1
+		return organ_lengths
+################################################################################
+	
+	def organ_mutations(self):
+		org_dict = {}
+		for mut in self.mutations:
+		#	print mut
+			for org in self.organs:
+				if in_range(int(mut[2]),[int(org[1]),int(org[2])]):
+					if org[0] not in org_dict.keys():
+						org_dict[org[0]] = [mut]
+					else:
+						org_dict[org[0]].append(mut)
+		return org_dict
+################################################################################
 
 
