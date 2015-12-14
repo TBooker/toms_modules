@@ -111,7 +111,7 @@ you can get the information easily.
 There are more options on the way...
 Fixed option allows you to specify whether ther are fixed mutations in your output"""
 class slim:
-	def __init__(self,slimput,fixed=False): 
+	def __init__(self,slimput,fixed=False,give_genomes = False): 
 		if type(slimput) == str:
 			slimmers = slimput.split("\n")	
 		elif type(slimput) == list:
@@ -120,11 +120,12 @@ class slim:
 			print("Error 1 for class slim: SLiM input is too short")
 			self.sanity = None
 			return None
+
 		self.sanity = "sane"
 		self.all = slimmers
 		self.name = slimmers[slimmers.index("#INPUT PARAMETER FILE")+1].strip("\n")
 		self.N = int(slimmers[slimmers.index('#DEMOGRAPHY AND STRUCTURE')+1].split(" ")[3])  ## return the number of individuals in the shol_simulation
-		output_lines = [i for i in slimmers if i.startswith('#OUT:')]
+		output_lines = [i for i in slimmers if i.startswith('#OUT:') or i.startswith("G")]
 		if len(output_lines) ==0:
 			self.output = False
 			print "File not output"
@@ -133,7 +134,8 @@ class slim:
 			self.output = True
 		random_line = [i for  i in output_lines if "R" in i][0]
 		self.sampleN = int(random_line.split(" ")[4])
-		fixed_line = [i for  i in output_lines if "F" in i]#[0]
+		fixed_line = slimmers.index([i for  i in output_lines if "F" in i][0])
+		genome_line = slimmers.index([i for i in output_lines if "G" in i][0])
 		if fixed:		
 			if len(fixed_line) == 0:
 				fixed_muts = False
@@ -181,26 +183,24 @@ class slim:
 	#######################################################################
 		self.length = sum([(int(l[2])-int(l[1]))+1 for l in self.organs])
 	#######################################################################	
-		if "R" in random_line.split(" "):
+		if random_line:
 			mutations_index = slimmers.index(random_line)+1
-			mutations_raw = [i.split(" ") for i in slimmers if slimmers.index(i) > mutations_index and slimmers.index(i) < slimmers.index("Genomes:") and len(i.split(" ")) == 8] ## this relies on the structure of the output HEAVILY!
+			mutations_raw = [i.split(" ") for i in slimmers if slimmers.index(i) > mutations_index and slimmers.index(i) < genome_line and len(i.split(" ")) == 8] ## this relies on the structure of the output HEAVILY!
 ## Thats a doozy, but it gets all the mutations you need from the populations
-	
-			try:
-				mutation_index_2 = slimmers.index("Genomes:")
-				self.mutations = mutations_raw[:mutation_index_2]
-				self.genomes = mutations_raw[mutation_index_2+1:slimmers.index(fixed_line)]
-			except ValueError:
-				self.mutations = mutations_raw
-				self.genomes = None
+			self.mutations = mutations_raw
 		else:
 			self.mutations = None
-			self.genomes =None
+		
 		if fixed:
 			if fixed_muts:
-				self.fixed = [i.split(" ") for i in slimmers[slimmers.index(fixed_line):] if len(i.split(" ")) == 8]
+				self.fixed = [i.split(" ") for i in slimmers[:] if len(i.split(" ")) == 8]
 			elif not fixed_muts:
-				self.fixed = []			
+				self.fixed = []
+		if give_genomes:
+			self.genomes = [i for i in slimmers[genome_line+1:fixed_line]]
+		#	mutations_raw = [i.split(" ") for i in slimmers if slimmers.index(i) > mutations_index and slimmers.index(i) < slimmers.index() and len(i.split(" ")) == 8]
+		else:
+			self.genomes = None
 ################################################################################		
 	#################################################
 ### This function tests whether the output is sensible or not
@@ -289,5 +289,16 @@ class slim:
 						org_dict[org[0]].append(mut)
 		return org_dict
 ################################################################################
+	def mutations_dict(self):
+		mut_dict = {}
+		for mut in self.mutations:
+			mut_dict[int(mut[0])] = int(mut[2]) 
+			
+		return mut_dict
 
-
+	def genome_dict(self):
+		genome_dict={}
+		for i in self.genomes:
+			x = i.split(" ")
+			genome_dict[x[0]] = x[1:]
+		return genome_dict
