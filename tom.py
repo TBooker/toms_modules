@@ -53,16 +53,6 @@ def brace():
 		print("EXIT")
 		sys.exit()
 
-##############################################################################
-# jukes_cantor
-# This function applies the jukes-cantor correction for multiple hits 
-#
-# COULDN'T THINK OF A BETTER PLACE FOR THIS
-##############################################################################
-from math import log
-def jukes_cantor(raw):
-	return -0.75*(log(1-(4*float(raw)/3)))
-
 
 ##############################################################################
 # OVERLAP
