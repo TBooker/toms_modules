@@ -27,6 +27,7 @@ def slim_reader_gzip(input_file):
 		slim_output = ''
 		terminator = 'None\n'
 		for line in FILE:
+	#		print line
 			if line.startswith('#INPUT'):
 				slim_output += line
 			elif not line.startswith(terminator):
@@ -34,7 +35,7 @@ def slim_reader_gzip(input_file):
 			elif line.startswith(terminator):
 				yield slim_output
 				slim_output = ' '
-			
+		yield slim_output
 		#yield slim_output	
 
 
@@ -105,13 +106,19 @@ def slim_reader_gzip(input_file):
 
 from tom import in_range
 
+
 """This is a class that allows you to access all the elements of a slim run easily
 For example, if you want to look at how chromosomal structure and genetic diversity interact
 you can get the information easily. 
 There are more options on the way...
 Fixed option allows you to specify whether ther are fixed mutations in your output"""
 class slim:
-	def __init__(self,slimput,fixed=False,give_genomes = False): 
+	def __init__(self,slimput,fixed=False,all_individuals=False,give_genomes = False): 
+
+		if len(slimput) < 100:
+			print("Error 1 for class slim: SLiM input is too short, has length " + str(len(slimput)))
+			self.sanity = None
+			return None
 		if type(slimput) == str:
 			slimmers = slimput.split("\n")	
 		elif type(slimput) == list:
@@ -120,11 +127,19 @@ class slim:
 			print("Error 1 for class slim: SLiM input is too short")
 			self.sanity = None
 			return None
+		if all_individuals:
+			out_letter="A"
+		else:
+			out_letter="R"
 
 		self.sanity = "sane"
 		self.all = slimmers
-		self.name = slimmers[slimmers.index("#INPUT PARAMETER FILE")+1].strip("\n")
+		try:
+			self.name = slimmers[slimmers.index("#INPUT PARAMETER FILE")+1].strip("\n")
+		except ValueError:
+			self.name = "unnamed"
 		self.N = int(slimmers[slimmers.index('#DEMOGRAPHY AND STRUCTURE')+1].split(" ")[3])  ## return the number of individuals in the shol_simulation
+
 		output_lines = [i for i in slimmers if i.startswith('#OUT:') or i.startswith("G")]
 		if len(output_lines) ==0:
 			self.output = False
@@ -132,15 +147,22 @@ class slim:
 			return None
 		else:
 			self.output = True
-		random_line = [i for  i in output_lines if "R" in i][0]
-		self.sampleN = int(random_line.split(" ")[4])
+#		random_line = [i for  i in output_lines if "R" in i][0]
+		output_start = [i for  i in output_lines if out_letter in i][0]
+		#print output_start
+		if all_individuals:
+			self.sampleN = self.N
+		else:
+			self.sampleN = int(output_start.split(" ")[4])
+    #            print output_lines
 		fixed_line = slimmers.index([i for  i in output_lines if "F" in i][0])
+		
 		genome_line = slimmers.index([i for i in output_lines if "G" in i][0])
-		if fixed:		
-			if len(fixed_line) == 0:
-				fixed_muts = False
-			else:
-				fixed_muts = True
+		#if fixed:		
+		#	if len(fixed_line) == 0:
+		#		fixed_muts = False
+		#	else:
+		#		fixed_muts = True
 
 		self.mut_rate = float(slimmers[slimmers.index('#MUTATION RATE')+1])
 		self.theta = float(self.N) * self.mut_rate * 4.0
@@ -183,19 +205,17 @@ class slim:
 	#######################################################################
 		self.length = sum([(int(l[2])-int(l[1]))+1 for l in self.organs])
 	#######################################################################	
-		if random_line:
-			mutations_index = slimmers.index(random_line)+1
+		if output_start:
+			mutations_index = slimmers.index(output_start)+1
 			mutations_raw = [i.split(" ") for i in slimmers if slimmers.index(i) > mutations_index and slimmers.index(i) < genome_line and len(i.split(" ")) == 8] ## this relies on the structure of the output HEAVILY!
 ## Thats a doozy, but it gets all the mutations you need from the populations
 			self.mutations = mutations_raw
 		else:
 			self.mutations = None
-		
+	#	print "!!!!"
 		if fixed:
-			if fixed_muts:
-				self.fixed = [i.split(" ") for i in slimmers[:] if len(i.split(" ")) == 8]
-			elif not fixed_muts:
-				self.fixed = []
+			self.fixed = [i.split(" ") for i in slimmers[fixed_line:] if len(i.split(" ")) == 8]
+	#		self.fixed = []
 		if give_genomes:
 			self.genomes = [i for i in slimmers[genome_line+1:fixed_line]]
 		#	mutations_raw = [i.split(" ") for i in slimmers if slimmers.index(i) > mutations_index and slimmers.index(i) < slimmers.index() and len(i.split(" ")) == 8]
@@ -288,17 +308,75 @@ class slim:
 					else:
 						org_dict[org[0]].append(mut)
 		return org_dict
+
 ################################################################################
-	def mutations_dict(self):
-		mut_dict = {}
+
+	def organ_fixed(self,threshold = 0):
+		org_dict = {}
+		for fix in self.fixed:
+			if int(fix[7]) < threshold: ## If the mutation fixed befor the threshold don't use it
+				continue
+			for org in self.organs:
+				if in_range(int(fix[2]),[int(org[1]),int(org[2])]):
+					if org[0] not in org_dict.keys():
+						org_dict[org[0]] = [fix]
+					else:
+						org_dict[org[0]].append(fix)
+		return org_dict
+################################################################################
+	def mutations_dict(self,minFreq = 0):
+		import collections
+		mut_dict = collections.OrderedDict()
+		#mut_dict = {}
 		for mut in self.mutations:
-			mut_dict[int(mut[0])] = int(mut[2]) 
-			
+			#print mut
+			if int(mut[7]) <= minFreq:
+				continue
+			else:
+				mut_dict[int(mut[0])] = int(mut[2]) 
 		return mut_dict
 
+################################################################################
+
+	def mutations_dict_positions_keys(self,minFreq = 0):
+		import collections
+		mut_dict = collections.OrderedDict()
+		for mut in self.mutations:
+			if int(mut[7]) <= minFreq:
+				continue
+			else:
+				mut_dict[int(mut[2])] = mut 
+		return mut_dict
+################################################################################
+	def mutations_dict_large(self,minFreq = 0, maxFreq = 1e6):
+		import collections
+		mut_dict = collections.OrderedDict()
+		#mut_dict = {}
+		for mut in self.mutations:
+			#print mut
+			if int(mut[7]) <= minFreq or int(mut[7]) >=maxFreq:
+				continue
+			else:
+				mut_dict[mut[0]] = mut 
+		return mut_dict
+
+################################################################################
 	def genome_dict(self):
 		genome_dict={}
 		for i in self.genomes:
 			x = i.split(" ")
 			genome_dict[x[0]] = x[1:]
 		return genome_dict
+
+################################################################################
+	def genome_counter_dict(self):
+		from collections import Counter
+		genome_dict={}
+		for i in self.genomes:
+			x = i.split(" ")
+			ind_count = Counter()
+			for j in x[1:]:
+				ind_count[j]+=1
+			genome_dict[x[0]] = ind_count 
+		return genome_dict
+

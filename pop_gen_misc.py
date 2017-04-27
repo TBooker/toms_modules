@@ -44,4 +44,25 @@ def jukes_cantor(raw):
 ##############################################################################
 
 def welch_transform(sh,o_d,zeta):
-	return pow(o_d/(sh**(sh+1)*zeta),-1.0*sh)
+	first = ((sh**(sh+1))*zeta)
+	second = pow(o_d/first,-1.0*sh)
+	return second
+
+##############################################################################
+# STATIONARY DISTRIBUTION
+# Assuming a stationary matrix of a Markov Process, this function returns the  
+# stationary distribution of that process. Particuluary useful for the stationary
+# distribution of allele frequencies (can be used as a prior in LDhelmet
+# 
+##############################################################################
+
+def stationary_distribution(trans_matrix):
+	import numpy as np
+	from scipy.linalg import eig
+	S,U = eig(trans_matrix.T)
+	j_stat =np.argmin(abs(S-1.0))
+	p_stat = U[:,j_stat].real
+	p_stat /= p_stat.sum()
+	return p_stat
+
+
