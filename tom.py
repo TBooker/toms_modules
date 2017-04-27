@@ -5,10 +5,6 @@
 import os,glob,sys, math
 import numpy as np
 
-def all_same(items):
-    return all(x == items[0] for x in items)
-
-
 ##############################################################################
 # MERGE FILES
 # This function takes a file identifier and finds all files that match it. 
@@ -56,16 +52,6 @@ def brace():
 	elif x:
 		print("EXIT")
 		sys.exit()
-
-##############################################################################
-# jukes_cantor
-# This function applies the jukes-cantor correction for multiple hits 
-#
-# COULDN'T THINK OF A BETTER PLACE FOR THIS
-##############################################################################
-from math import log
-def jukes_cantor(raw):
-	return -0.75*(log(1-(4*float(raw)/3)))
 
 
 ##############################################################################
@@ -136,7 +122,7 @@ def mean_se(stats_raw,index = "NA"):
 		return mean,sw,n
 
 ##############################################################################
-# ALL_SMAE
+# ALL_SAME
 # This little function just returns TRUE if all the items in a list are the 
 # same. It can also be acheived by converting the list to a set and then testing 
 # the length 
@@ -145,4 +131,13 @@ def mean_se(stats_raw,index = "NA"):
 def all_same(items):
     return all(x == items[0] for x in items)
 
+##############################################################################
+# IN_RANGE
+# This function returns True if a given int falls within a given range 
+##############################################################################
 
+def in_range(point,range):
+	if point >= range[0] and point <= range[1]:
+		return True
+	else:
+		return False

@@ -31,8 +31,9 @@ def SFS_from_all_frequencies(frequencies,N):
 		if i > N:
 			print "SFS_from_frequencies: Error in your frequencies vector: One of the values is greater than the number of individuals\nThe offending value is: " + str(i) +" and the sample is "+str(N)
 			return
-		if i > 0 and i < N:
+		if i > 0 and i <= N:
 			SFS[i] += 1
+			
 	SFS[0] = length - sum(SFS)
 	if sum(SFS) < length:
 		print"SFS_from_frequencies: Error in your frequencies vector: Fewer items in the SFS than the length of the region"
@@ -76,10 +77,10 @@ def merge_SFS(a,b):
 
 def pi(SFS,per_site = True):
 	if sum(SFS) ==0: 
-		return None
+		return -99
 	N = len(SFS)-1
 	binom = (N * (N -1))/2
-	pi = sum([(1.0*i*(N-i)*(SFS[i]))/(binom) for i in xrange(N) if i != 0] )
+	pi = sum([(1.0*i*(N-i)*(SFS[i]))/(binom) for i in xrange(N) if i != 0])
 	if per_site == True:
 		return pi/sum(SFS)
 	else:
@@ -93,7 +94,8 @@ def pi(SFS,per_site = True):
 ##############################################################################
 
 def xsi(SFS):
-	if len(SFS) ==0: return None
+	if len(SFS) ==0: return -99
+#        print SFS
 	N = len(SFS)-1
 	total = sum(SFS[1:-1])
 	xsi_numerator = sum([float(i*i*SFS[i])/total for i in xrange(N) if i > N/2 and i !=N])
@@ -111,7 +113,7 @@ def xsi(SFS):
 
 
 def pi2(SFS):
-	if len(SFS) ==0: return None
+	if len(SFS) ==0: return -99
 	N = len(SFS)-1
 	binom = (N * (N -1))/2
 	pi2 = sum([(1.0*i*(N-i)*(SFS[i]))/binom for i in xrange(N) if i >= N/2 and  i != N ] )
@@ -125,7 +127,7 @@ def pi2(SFS):
 
 
 def fwh(SFS,per_site = True):
-	if len(SFS) ==0: return None
+	if len(SFS) ==0: return -99
 	N = len(SFS)-1
 	binom = (N * (N -1))/2
 	fwh = sum([(1.0*i*i*(SFS[i]))/binom for i in xrange(N) if i != 0 or  i != N] )
@@ -141,7 +143,7 @@ def fwh(SFS,per_site = True):
 ##############################################################################
 
 def theta_W(SFS,per_site=True):
-	if len(SFS) ==0: return None
+	if len(SFS) ==0: return -99
 	N = len(SFS)-1
 	S = sum(SFS[1:-1]) ## this slice takes the interior of the SFS, gets S
 	harmonic = sum(1.0/d for d in xrange(1, N-1,1))
@@ -171,7 +173,7 @@ def tajima(SFS):
 	e1 = float(c1) / a1
 	e2 = float(c2) / ( (a1**2) + a2 )
 	if ((e1 * S )+ ((e2 * S) * (S - 1))) == 0.0:   # Tajima 1989 Equation 38
-		return None	
+		return -99
 	else: 
 		D = (float(th_pi - (float(S)/(a1)))/math.sqrt((e1 * S )+ ((e2 * S) * (S - 1) )))
 		return D
